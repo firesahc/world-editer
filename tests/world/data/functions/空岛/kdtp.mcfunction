@@ -1,0 +1,1 @@
+execute @a[score_kdtp_min=1] ~ ~ ~ function 空岛:kdtp_0

@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:arrow",
+      "data": 0
+    },
+    "title": {
+      "translate": "advancements.adventure.sniper_duel.title"
+    },
+    "frame": "challenge",
+    "description": {
+      "translate": "advancements.adventure.sniper_duel.description"
+    },
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "minecraft:adventure/shoot_arrow",
+  "criteria": {
+    "喵帕斯": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "喵帕斯"
+    ]
+  ],
+  "rewards": {
+    "experience": 50
+  }
+}

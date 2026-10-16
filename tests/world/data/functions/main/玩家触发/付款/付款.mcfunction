@@ -1,0 +1,1 @@
+execute @a[score_fk_min=1] ~ ~ ~ function main:玩家触发/付款/付款_检测

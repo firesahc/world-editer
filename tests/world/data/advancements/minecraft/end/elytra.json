@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:elytra",
+      "data": 0
+    },
+    "title": {
+      "translate": "advancements.end.elytra.title"
+    },
+    "frame": "goal",
+    "description": {
+      "translate": "advancements.end.elytra.description"
+    },
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "minecraft:end/find_end_city",
+  "criteria": {
+    "喵帕斯": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "喵帕斯"
+    ]
+  ]
+}

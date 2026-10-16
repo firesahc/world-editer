@@ -1,0 +1,15 @@
+tellraw @p[x=-1951,y=66,z=-1973,r=1,c=1,score_金钱=199] [{"text":"【铁匠铺】","color":"yellow"},{"text":"您已经金币不足，锻造炉将不再能使用","color":"red"}]
+scoreboard players operation @a[x=-1951,y=66,z=-1973,r=1,c=1,score_金钱_min=200] CL = @r[type=armor_stand,x=-1946,y=61,z=-1985,dx=3,dy=3,dz=7] CL
+scoreboard players add @a[x=-1951,y=66,z=-1973,r=1,c=1,score_金钱_min=200] CL 1
+execute @a[x=-1951,y=66,z=-1973,r=1,c=1,score_CL_min=1,score_CL=7,score_金钱_min=200] ~ ~ ~ tellraw @a [{"text":"【铁匠铺】","color":"yellow"},{"selector":"@a[x=-1951,y=66,z=-1973,r=1,c=1]"},{"text":"成功锻造武器至7星","color":"green"}]
+execute @a[x=-1951,y=66,z=-1973,r=1,c=1,score_CL_min=1,score_CL=7,score_金钱_min=200] ~ ~ ~ blockdata -1948 67 -1973 {Items:[{id:"minecraft:diamond_sword",Count:1b,Damage:0s,tag:{display:{Name:"§5七星龙渊剑",Lore:["§e宝剑主修：§a锋利","§e淬炼星级：§4✴✴✴✴✴✴","         §4✴","§e当前属性：","§a锋利11","§a抢夺3","§a耐久3","§a经验修补","§a火焰附加2","§a横扫之刃3","§5似乎还隐藏着巨大潜力"]},Tags:["FL11"],HideFlags:1,ench:[{id:16,lvl:11},{id:21,lvl:3},{id:34,lvl:3},{id:70,lvl:1},{id:20,lvl:2},{id:22,lvl:3}]},Slot:2b}]}
+execute @a[x=-1951,y=66,z=-1973,r=1,c=1,score_CL_min=1,score_CL=7,score_金钱_min=200] ~ ~ ~ particle happyVillager -1949 67 -1973 0.3 0.3 0.3 0.001 50
+execute @a[x=-1951,y=66,z=-1973,r=1,c=1,score_CL_min=1,score_CL=7,score_金钱_min=200] ~ ~ ~ playsound minecraft:block.anvil.use ambient @a[x=-1951,y=66,z=-1973,r=10] ~ ~ ~ 5 1 1
+execute @a[x=-1951,y=66,z=-1973,r=1,c=1,score_CL_min=1,score_CL=7,score_金钱_min=200] ~ ~ ~ scoreboard players add @s 7星成功 1
+execute @a[x=-1951,y=66,z=-1973,r=1,c=1,score_CL_min=8,score_CL=10,score_金钱_min=200] ~ ~ ~ tellraw @a [{"text":"【铁匠铺】","color":"yellow"},{"selector":"@a[x=-1951,y=66,z=-1973,r=1,c=1]"},{"text":"升7星武器失败！！！","color":"red"}]
+execute @a[x=-1951,y=66,z=-1973,r=1,c=1,score_CL_min=8,score_CL=10,score_金钱_min=200] ~ ~ ~ blockdata -1948 67 -1973 {Items:[{id:"minecraft:diamond_sword",Count:1b,Damage:1560s,tag:{AttributeModifiers:[{Operation:0,Amount:-10,UUIDLeast:-1597289825726788178L,UUIDMost:2952449315713832832L,AttributeName:"generic.maxHealth",Name:"generic.maxHealth"},{Operation:0,Amount:-0.01,UUIDLeast:-1687472875157597155L,UUIDMost:2797983238354931247L,AttributeName:"generic.movementSpeed",Name:"generic.movementSpeed"}],display:{Name:"§e破碎之刃",Lore:["§5武器锻造的失败品"]},Tags:["PS"],HideFlags:3,ench:[{id:71,lvl:1}]},Slot:2b}]}
+execute @a[x=-1951,y=66,z=-1973,r=1,c=1,score_CL_min=8,score_CL=10,score_金钱_min=200] ~ ~ ~ particle largeexplode -1949 67 -1973 0.1 0.1 0.1 0.00001 2
+execute @a[x=-1951,y=66,z=-1973,r=1,c=1,score_CL_min=8,score_CL=10,score_金钱_min=200] ~ ~ ~ playsound minecraft:entity.generic.explode ambient @a[x=-1951,y=66,z=-1973,r=10] ~ ~ ~ 5 1 1
+execute @a[x=-1951,y=66,z=-1973,r=1,c=1,score_CL_min=8,score_CL=10,score_金钱_min=200] ~ ~ ~ scoreboard players add @s 7星失败 1
+scoreboard players remove @a[score_金钱_min=200,x=-1951,y=66,z=-1973,r=1,c=1,score_CL_min=1,score_CL=10] 金钱 200
+scoreboard players set @a[x=-1951,y=66,z=-1973,r=1,c=1,score_CL_min=1,score_CL=10] CL 0

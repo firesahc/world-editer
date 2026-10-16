@@ -1,0 +1,1 @@
+scoreboard players add @a 新人 0

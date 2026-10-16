@@ -1,0 +1,1 @@
+execute @a[score_新人_min=0,score_新人=0] ~ ~ ~ function main:系统触发/新人初始化_0

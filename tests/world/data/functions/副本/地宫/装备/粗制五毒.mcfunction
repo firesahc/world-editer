@@ -1,0 +1,3 @@
+blockdata -1500 21 -3010 {Items:[{id:"minecraft:splash_potion",Count:1b,tag:{display:{Name:"§7粗制的五毒药水",Lore:["§3用四种有毒食物加上地狱","§3疣酿造而成的五毒药水粗","§3制版。"]},Tags:["粗制的五毒药水"],HideFlags:32,Potion:water},Slot:7b}]}
+tellraw @a [{"text":"【地宫瓮】","color":"yellow"},{"text":"大家快看！","color":"green"},{"selector":"@p[r=1,c=1,x=-1500,y=20,z=-3008,score_副本积分_min=5]","bold":false},{"text":"合成了","color":"green"},{"text":"[粗制的五毒药水]","color":"blue"}]
+scoreboard players remove @p[r=1,c=1,x=-1500,y=20,z=-3008,score_副本积分_min=5] 副本积分 5

@@ -1,0 +1,1 @@
+execute @a[score_登录_min=1] ~ ~ ~ function main:text/登录_0

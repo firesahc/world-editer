@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:wooden_pickaxe",
+      "data": 0
+    },
+    "title": {
+      "translate": "advancements.story.mine_stone.title"
+    },
+    "frame": "task",
+    "description": {
+      "translate": "advancements.story.mine_stone.description"
+    },
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "minecraft:story/root",
+  "criteria": {
+    "喵帕斯": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "喵帕斯"
+    ]
+  ]
+}

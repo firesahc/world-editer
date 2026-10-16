@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:dragon_breath",
+      "data": 0
+    },
+    "title": {
+      "translate": "advancements.end.dragon_breath.title"
+    },
+    "frame": "goal",
+    "description": {
+      "translate": "advancements.end.dragon_breath.description"
+    },
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "minecraft:end/kill_dragon",
+  "criteria": {
+    "喵帕斯": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "喵帕斯"
+    ]
+  ]
+}

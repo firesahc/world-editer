@@ -1,0 +1,1 @@
+scoreboard players set @a[x=-7000,y=0,z=-7000,dx=7000,dy=256,dz=7000] 冒险模式 1

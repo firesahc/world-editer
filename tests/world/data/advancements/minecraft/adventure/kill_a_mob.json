@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:iron_sword",
+      "data": 0
+    },
+    "title": {
+      "translate": "advancements.adventure.kill_a_mob.title"
+    },
+    "frame": "task",
+    "description": {
+      "translate": "advancements.adventure.kill_a_mob.description"
+    },
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "minecraft:adventure/root",
+  "criteria": {
+    "喵帕斯": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "喵帕斯"
+    ]
+  ]
+}

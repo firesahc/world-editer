@@ -1,0 +1,1 @@
+execute @p[x=-1987,y=74,z=-2698,r=1,score_杀僵尸_min=5,score_杀小白_min=5,score_杀蜘蛛_min=5,score_id=0] ~ ~ ~ function 主城:萌新试炼完成_0

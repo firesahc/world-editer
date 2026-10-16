@@ -1,0 +1,5 @@
+blockdata -1500 21 -3010 {Items:[{Slot:4b,id:"minecraft:diamond_chestplate",Count:1b,tag:{HideFlags:3,Tags:["天空套铠甲"],Unbreakable:1b,ench:[{id:0,lvl:5},{id:1,lvl:10},{id:7,lvl:5}],display:{Name:"§b§l天空之城●天空甲铠甲",Lore:["§6聚集了真青龙甲铠甲和蚂蚁晶","§6石的力量，其防御力不可小估。","","§c   天空之城的七宝之一 ","","§4天空套装","","§e3件 §a常驻力量II","§e5件 §a常驻抗性II","§e7件 §a解除御神盾的虚弱效果","","§b属性：","§a保护5","§a荆棘5","§a火焰保护10"]}}}]}
+tellraw @a [{"text":"【地宫瓮】","color":"yellow"},{"text":"大家快看！","color":"green"},{"selector":"@p[r=1,c=1,x=-1500,y=20,z=-3008,score_金钱_min=5000,score_副本积分_min=200]","bold":false},{"text":"合成了","color":"green"},{"text":"[天空之城●天空甲铠甲]","color":"red"}]
+scoreboard players add @p[r=1,c=1,x=-1500,y=20,z=-3008] 神器合成 1
+scoreboard players remove @p[r=1,c=1,x=-1500,y=20,z=-3008,score_副本积分_min=200] 副本积分 200
+scoreboard players remove @p[r=1,c=1,x=-1500,y=20,z=-3008,score_金钱_min=5000] 金钱 5000

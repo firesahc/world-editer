@@ -1,0 +1,1 @@
+execute @e[type=item,tag=!系统] ~ ~ ~ function main:系统触发/掉落物清理_0 unless @a[r=40]

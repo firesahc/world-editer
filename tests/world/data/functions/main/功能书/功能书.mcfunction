@@ -1,0 +1,1 @@
+execute @a[score_id_min=1] ~ ~ ~ function main:功能书/功能书_0

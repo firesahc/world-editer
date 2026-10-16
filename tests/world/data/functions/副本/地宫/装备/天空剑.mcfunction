@@ -1,0 +1,5 @@
+blockdata -1500 21 -3010 {Items:[{Slot:4b,id:"minecraft:diamond_sword",Count:1b,tag:{HideFlags:3,Tags:["天空剑"],Unbreakable:1b,ench:[{id:16,lvl:20},{id:17,lvl:8},{id:18,lvl:8},{id:20,lvl:4},{id:21,lvl:3},{id:22,lvl:5}],display:{Name:"§e§l天空之城●神圣剑",Lore:["§6聚集了三相之力和阴阳双剑","§6的力量，可打出成吨的伤害","","§c   天空之城的七宝之一","","§4天空套装","§e3件 §a常驻力量II","§e5件 §a常驻抗性II","§e7件 §a解除御神盾的虚弱效果","","§b属性：","§a锋利20","§a亡灵杀手8","§a节肢杀手8","§a火焰附加4","§a抢夺3","§a横扫之刃5"]}}}]}
+tellraw @a [{"text":"【地宫瓮】","color":"yellow"},{"text":"大家快看！","color":"green"},{"selector":"@p[r=1,c=1,x=-1500,y=20,z=-3008,score_金钱_min=20000,score_jf_min=500]","bold":false},{"text":"合成了","color":"green"},{"text":"[天空之城●神圣剑]","color":"yellow"}]
+scoreboard players remove @p[r=1,c=1,x=-1500,y=20,z=-3008,score_金钱_min=20000] 金钱 20000
+scoreboard players remove @p[r=1,c=1,x=-1500,y=20,z=-3008,score_jf_min=500] jf 500
+scoreboard players add @p[r=1,c=1,x=-1500,y=20,z=-3008] 神器合成 1

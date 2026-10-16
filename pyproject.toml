@@ -1,0 +1,19 @@
+[project]
+name = "world-editer"
+version = "0.1.0"
+description = "Offline Minecraft 1.12 Java Edition world (Anvil/.mca) data editor: CLI + MCP"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+mcp = ["fastmcp>=3.0.2"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+world-editer = "world_editer.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"

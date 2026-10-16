@@ -1,0 +1,7 @@
+scoreboard teams join 菜鸟 @s[score_主线_min=11,score_主线=20]
+scoreboard teams join 生铁 @s[score_主线_min=21,score_主线=30]
+scoreboard teams join 青铜 @s[score_主线_min=31,score_主线=31]
+scoreboard teams join 白银 @s[score_主线_min=32,score_主线=32]
+scoreboard teams join 黄金 @s[score_主线_min=33,score_主线=33]
+scoreboard teams join 铂金 @s[score_主线_min=34,score_主线=34]
+scoreboard teams join 钻石 @s[score_主线_min=35,score_主线=35]

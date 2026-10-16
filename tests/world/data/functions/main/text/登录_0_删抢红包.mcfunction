@@ -1,0 +1,1 @@
+scoreboard players tag @s remove 抢红包

@@ -1,0 +1,6 @@
+execute @s[score_延时_min=60] ~ ~ ~ tellraw @a [{"text":"■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n","color":"red","bold":true},{"text":"■ ","color":"red","bold":true},{"text":"⌈清理⌉","color":"gold","bold":true},{"text":"   世界清理将由一分钟后进行   ","color":"green","bold":true},{"text":"⌈清理⌉","color":"gold"},{"text":" ■\n","color":"red"},{"text":"■ ","color":"red","bold":true},{"text":"⌊提醒⌋","color":"gold","bold":true},{"text":"      请注意公告栏倒计时      ","color":"green","bold":true},{"text":"⌊提醒⌋","color":"gold"},{"text":" ■\n","color":"red"},{"text":"■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■","color":"red","bold":true}]
+execute @s[score_延时_min=10,score_延时=10] ~ ~ ~ tellraw @a [{"text":"■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■\n","color":"red","bold":true},{"text":"■ ","color":"red","bold":true},{"text":"⌈清理⌉","color":"gold","bold":true},{"text":"   世界清理将由10秒钟后进行   ","color":"green","bold":true},{"text":"⌈清理⌉","color":"gold"},{"text":" ■\n","color":"red"},{"text":"■ ","color":"red","bold":true},{"text":"⌊提醒⌋","color":"gold","bold":true},{"text":"      请注意公告栏倒计时      ","color":"green","bold":true},{"text":"⌊提醒⌋","color":"gold"},{"text":" ■\n","color":"red"},{"text":"■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■","color":"red","bold":true}]
+
+scoreboard players operation 世界清理倒计时 公告 = @s 延时
+
+function main:系统触发/扫地/扫地_0_0 if @s[score_延时=0]

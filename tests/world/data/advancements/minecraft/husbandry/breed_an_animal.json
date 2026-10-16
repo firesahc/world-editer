@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:wheat",
+      "data": 0
+    },
+    "title": {
+      "translate": "advancements.husbandry.breed_an_animal.title"
+    },
+    "frame": "task",
+    "description": {
+      "translate": "advancements.husbandry.breed_an_animal.description"
+    },
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "minecraft:husbandry/root",
+  "criteria": {
+    "喵帕斯": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "喵帕斯"
+    ]
+  ]
+}

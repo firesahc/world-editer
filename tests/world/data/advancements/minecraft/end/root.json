@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:end_stone",
+      "data": 0
+    },
+    "title": {
+      "translate": "advancements.end.root.title"
+    },
+    "frame": "task",
+    "background": "minecraft:textures/gui/advancements/backgrounds/end.png",
+    "description": {
+      "translate": "advancements.end.root.description"
+    },
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "喵帕斯": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "喵帕斯"
+    ]
+  ]
+}

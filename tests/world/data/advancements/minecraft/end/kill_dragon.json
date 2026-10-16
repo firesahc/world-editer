@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:skull",
+      "data": 5
+    },
+    "title": {
+      "translate": "advancements.end.kill_dragon.title"
+    },
+    "frame": "task",
+    "description": {
+      "translate": "advancements.end.kill_dragon.description"
+    },
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "minecraft:end/root",
+  "criteria": {
+    "喵帕斯": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "喵帕斯"
+    ]
+  ]
+}

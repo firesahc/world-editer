@@ -1,0 +1,12 @@
+entitydata @e[type=Zombie,rm=5,r=80,name=!蓝方冤魂,tag=!峡谷boss]  {CustomName:"蓝方冤魂",Team:"蓝色",ActiveEffects:[{Id:10,Amplifier:2,Duration:999999,Ambient:1b},{Id:11,Amplifier:2,Duration:999999,Ambient:1b},{Id:1,Amplifier:2,Duration:1999,Ambient:1b},{Id:24,Amplifier:10,Duration:1000,Ambient:1b}],Attributes:[{Name:generic.knockbackResistance,Base:0.8}],ArmorItems:[{id:"minecraft:leather_boots",Count:1,tag:{display:{color:00255},ench:[{id:0,lvl:3},{id:71,lvl:10}]}},{id:"minecraft:leather_leggings",Count:1,tag:{display:{color:00255},ench:[{id:0,lvl:3},{id:1,lvl:10},{id:71,lvl:10}]}},{id:"minecraft:leather_chestplate",Count:1,tag:{display:{color:00255},ench:[{id:0,lvl:3},{id:4,lvl:10},{id:71,lvl:10}]}},{id:"minecraft:dye",Count:2,Damage:4s,tag:{display:{Name:"蓝色精魂",Lore:["一组蓝色惊魂可以召唤蓝方英雄"]},Unbreakable:1b}}],HandItems:[{id:diamond_sword,Count:1b,Damage:0s,tag:{ench:[{id:19,lvl:3},{id:20,lvl:3},{id:16,lvl:5},{id:71,lvl:10}]}},{}],ArmorDropChances:[0.0F,0.0F,0.0F,0.95F],HandDropChances:[0.0F,0.0F]}
+entitydata @e[type=Skeleton,rm=5,r=80,name=!红方冤魂,tag=!峡谷boss] {CustomName:"红方冤魂",Team:"红色",ActiveEffects:[{Id:10,Amplifier:2,Duration:999999,Ambient:1b},{Id:11,Amplifier:2,Duration:999999,Ambient:1b},{Id:24,Amplifier:10,Duration:400,Ambient:1b}],ArmorItems:[{id:"minecraft:leather_boots",Count:1,tag:{display:{color:16711680},ench:[{id:0,lvl:2},{id:71,lvl:10}]}},{id:"minecraft:leather_leggings",Count:1,tag:{display:{color:16711680},ench:[{id:0,lvl:2},{id:1,lvl:10},{id:71,lvl:10}]}},{id:"minecraft:leather_chestplate",Count:1,tag:{display:{color:16711680},ench:[{id:0,lvl:2},{id:4,lvl:10},{id:71,lvl:10}]}},{id:"minecraft:dye",Count:2,Damage:1s,tag:{display:{Name:"红色精魂",Lore:["一组红色精魂可以召唤红方英雄"]},Unbreakable:1b}}],HandItems:[{id:bow,Count:1b,Damage:0s,tag:{ench:[{id:49,lvl:1},{id:71,lvl:10}]}},{id:"minecraft:tipped_arrow",Count:1b,Damage:0s,tag:{CustomPotionEffects:[{Duration:40,Id:2,Amplifier:1}]}}],ArmorDropChances:[0.0F,0.0F,0.0F,0.95F],HandDropChances:[0.0F,0.0F]}
+
+tp @e[r=80,type=pig] -2007 47 -2025
+tp @e[r=80,type=chicken] -2007 47 -2025
+tp @e[r=80,type=mule] -2007 47 -2025
+tp @e[r=80,type=donkey] -2007 47 -2025
+tp @e[r=80,type=llama] -2007 47 -2025
+tp @e[r=80,type=horse] -2007 47 -2025
+tp @e[r=80,type=wolf] -2007 47 -2025
+tp @e[r=80,type=sheep] -2007 47 -2025
+tp @e[r=80,type=cow] -2007 47 -2025

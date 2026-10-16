@@ -1,0 +1,3 @@
+blockdata -1500 21 -3010 {Items:[{id:"minecraft:splash_potion",Count:1b,Damage:0s,tag:{display:{Name:"§c五毒药水",Lore:["§2一种混合型剧毒药水，携","§2带它的人将会中毒不止。","§2千万不要将本药水喷在末","§2地或地狱副本的最终BOSS","§2身上！"]},Tags:["五毒药水"],HideFlags:32,Potion:water,CustomPotionEffects:[{Id:20,Amplifier:0,Duration:100,ShowParticles:0b}]},Slot:7b}]}
+tellraw @a [{"text":"【地宫瓮】","color":"yellow"},{"text":"大家快看！","color":"green"},{"selector":"@p[r=1,c=1,x=-1500,y=20,z=-3008,score_副本积分_min=5]","bold":false},{"text":"合成了","color":"green"},{"text":"[五毒药水]","color":"red"}]
+scoreboard players remove @p[r=1,c=1,x=-1500,y=20,z=-3008,score_副本积分_min=5] 副本积分 5

@@ -1,0 +1,5 @@
+execute @a[x=-1987,y=74,z=-2698,r=200,score_id=0] ~ ~ ~ title @s actionbar [{"text":"新手挑战：","color":"aqua","bold":true},{"text":" （杀僵尸","color":"dark_red","bold":true},{"score":{"name":"@p[r=2,c=1]","objective":"杀僵尸"},"color":"red","bold":true},{"text":"/5)","color":"dark_red","bold":true},{"text":" （杀小白","color":"dark_red","bold":true},{"score":{"name":"@p[r=2,c=1]","objective":"杀小白"},"color":"red","bold":true},{"text":"/5)","color":"dark_red","bold":true},{"text":" （杀蜘蛛","color":"dark_red","bold":true},{"score":{"name":"@p[r=2,c=1]","objective":"杀蜘蛛"},"color":"red","bold":true},{"text":"/5)","color":"dark_red","bold":true}] 0 100 0
+
+execute @a[score_面板显示=1,score_面板显示_min=1,score_id_min=1] ~ ~ ~ title @s actionbar [{"text":"  个人ID ","color":"red","bold":true},{"score":{"name":"@s","objective":"id"},"color":"green","bold":true},{"text":"  积分 ","color":"aqua","bold":true},{"score":{"name":"@s","objective":"jf"},"color":"green","bold":true},{"text":"  金币 ","color":"gold","bold":"true"},{"score":{"name":"@s","objective":"金钱"},"color":"green","bold":true}] 0 100 0
+
+execute @a[score_book_min=1,score_book=8] ~ ~ ~ function main:text/面板显示_0

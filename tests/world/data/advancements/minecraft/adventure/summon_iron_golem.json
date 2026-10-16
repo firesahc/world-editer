@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:pumpkin",
+      "data": 0
+    },
+    "title": {
+      "translate": "advancements.adventure.summon_iron_golem.title"
+    },
+    "frame": "goal",
+    "description": {
+      "translate": "advancements.adventure.summon_iron_golem.description"
+    },
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "minecraft:adventure/trade",
+  "criteria": {
+    "喵帕斯": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "喵帕斯"
+    ]
+  ]
+}

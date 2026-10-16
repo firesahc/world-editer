@@ -1,0 +1,1 @@
+execute @a[score_副本次数=0,score_离线日期_min=1] ~ ~ ~ function main:系统触发/离线补偿/离线补偿_副本次数

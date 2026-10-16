@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:apple",
+      "data": 0
+    },
+    "title": {
+      "translate": "advancements.husbandry.balanced_diet.title"
+    },
+    "frame": "challenge",
+    "description": {
+      "translate": "advancements.husbandry.balanced_diet.description"
+    },
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "minecraft:husbandry/plant_seed",
+  "criteria": {
+    "喵帕斯": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "喵帕斯"
+    ]
+  ],
+  "rewards": {
+    "experience": 100
+  }
+}

@@ -1,0 +1,1 @@
+scoreboard players tag @s add 周围无人

@@ -1,0 +1,5 @@
+blockdata -1500 21 -3010 {Items:[{Slot:4b,id:"minecraft:bow",Count:1b,tag:{HideFlags:1,Tags:["天空弓"],Unbreakable:1b,ench:[{id:48,lvl:15},{id:49,lvl:3},{id:50,lvl:1},{id:51,lvl:1}],display:{Name:"§d§l天空之城●鹰角弓",Lore:["§6聚集了炽天魔龙和蚂蚁晶","§6石的力量，其威力不可小估。","","§c   天空之城的七宝之一  ","","§4天空套装","","§e3件 §a常驻力量II","§e5件 §a常驻抗性II","§e7件 §a解除御神盾的虚弱效果","","§b属性：","§a力量15","§a冲击3","§a火矢","§a无限"]}}}]}
+tellraw @a [{"text":"【地宫瓮】","color":"yellow"},{"text":"大家快看！","color":"green"},{"selector":"@p[r=1,c=1,x=-1500,y=20,z=-3008,score_金钱_min=10000,score_活动jf_min=400]","bold":false},{"text":"合成了","color":"green"},{"text":"[天空之城●鹰角]","color":"light_purple"}]
+scoreboard players remove @p[r=1,c=1,x=-1500,y=20,z=-3008,score_金钱_min=10000] 金钱 10000
+scoreboard players remove @p[r=1,c=1,x=-1500,y=20,z=-3008,score_活动jf_min=400] 活动jf 400
+scoreboard players add @p[r=1,c=1,x=-1500,y=20,z=-3008] 神器合成 1
