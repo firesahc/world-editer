@@ -30,8 +30,9 @@ def main():
             ln = struct.unpack(">I", raw[start:start+4])[0]
             if raw[start+4] != 2:
                 continue
+            nsec = off & 0xFF
             try:
-                data = zlib.decompress(raw[start+5:start+5+ln-1])
+                data = region.decompress_chunk_payload(raw, start, nsec, ln)
             except Exception:
                 continue
             try:
@@ -57,8 +58,9 @@ def main():
             start = sector * 4096
             ln = struct.unpack(">I", raw[start:start+4])[0]
             if raw[start+4] != 2: continue
+            nsec = off & 0xFF
             try:
-                data = zlib.decompress(raw[start+5:start+5+ln-1])
+                data = region.decompress_chunk_payload(raw, start, nsec, ln)
             except Exception:
                 continue
             tes = region.parse_tile_entities(data)

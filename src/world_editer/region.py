@@ -31,14 +31,64 @@ def chunk_location(world, cx, cz):
     return rf, li, sector, raw
 
 
+def decompress_chunk_payload(raw, start, nsec, ln):
+    """Robustly decompress a 1.12 Anvil chunk payload.
+
+    Minecraft stores ``L`` in the header but some worlds/edits under-report it;
+    the allocated ``nsec`` sectors always carry the complete stream, so fall back
+    to scanning the whole sector range when the declared size is too short.
+    """
+    if nsec and nsec > 0:
+        sector_end = start + nsec * 4096
+    else:
+        sector_end = start + ln + 4095
+    if sector_end > len(raw):
+        sector_end = len(raw)
+    # Full sector range (includes trailing padding).
+    full = raw[start + 5:sector_end]
+    # Declared range (exclusive upper bound from header).
+    if ln and ln >= 1:
+        declared_end = min(start + 5 + (ln - 1), len(raw))
+        declared = raw[start + 5:declared_end]
+    else:
+        declared = b""
+    for blob in (full, declared):
+        if not blob:
+            continue
+        try:
+            dec = zlib.decompress(blob)
+            return dec
+        except Exception:
+            pass
+        obj = zlib.decompressobj()
+        try:
+            dec = obj.decompress(blob)
+        except Exception:
+            continue
+        # Accept only when the stream is actually complete, else try the
+        # other slice.
+        if obj.eof:
+            return dec
+    # Last resort: decompressobj without EOF requirement on the fullest slice.
+    obj = zlib.decompressobj()
+    dec = obj.decompress(full)
+    if not dec:
+        raise ValueError("chunk payload could not be decompressed")
+    return dec
+
+
 def read_chunk(world, cx, cz):
     rf, li, sector, raw = chunk_location(world, cx, cz)
     start = sector * 4096
     ln = struct.unpack(">I", raw[start:start + 4])[0]
+    nsec = (ln + 4095) // 4096 if ln else 0
+    loc = struct.unpack(">I", raw[li * 4:li * 4 + 4])[0]
+    nsec = loc & 0xFF or nsec
     t = raw[start + 4]
     if t != 2:
         raise ValueError(f"非 zlib 压缩 (type={t})")
-    return zlib.decompress(raw[start + 5:start + 5 + ln - 1]), rf, li, sector, start, ln, raw
+    data = decompress_chunk_payload(raw, start, nsec, ln)
+    return data, rf, li, sector, start, ln, raw
 
 
 def write_chunk(world, cx, cz, new_nbt_bytes):

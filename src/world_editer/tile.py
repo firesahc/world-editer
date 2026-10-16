@@ -122,12 +122,13 @@ def tile_list(world, box=None, keyword=None):
                 sector = off >> 8
                 if sector == 0:
                     continue
+                count = off & 0xFF
                 start = sector * 4096
-                ln = struct.unpack(">I", raw[start:start + 4])[0]
-                if raw[start + 4] != 2:
+                if start + 5 > len(raw) or raw[start + 4] != 2:
                     continue
+                ln = struct.unpack(">I", raw[start:start + 4])[0]
                 try:
-                    data = zlib.decompress(raw[start + 5:start + 5 + ln - 1])
+                    data = region.decompress_chunk_payload(raw, start, count, ln)
                 except Exception:
                     continue
                 for te in region.parse_tile_entities(data):
