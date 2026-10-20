@@ -16,17 +16,36 @@ description: 离线 Minecraft 1.12 Anvil（.mca）地图数据编辑操作——
 
 ## 工具优先级
 
-优先用 MCP 服务器 `world-editer`（在 opencode.jsonc 里注册）——已具备 `get_tile`、`set_tile`、`get_block`、`set_block`、`list_tiles`、`list_candidates`、`backup`、`diff`。
-MCP 不可用时，用 execute 工具调用 CLI `world-editer ...`。
+优先用 MCP 服务器 `world-editer`（在 opencode.jsonc 里注册）——已具备 `get_tile`、`set_tile`、`get_block`、`list_tiles`、`backup`（共 5 个）。
+MCP 不可用时，用 execute 工具调用 CLI `world-editer ...`（也可 `python src/world_editer/cli.py ...`）。
 如果必须 scripting，直接复用 `src/world_editer/`，不要重新发明 NBT openers。
+
+> `set_block` / `fill` / `diff` / `list_candidates` **尚未实现**，需要时先看 README「已知边界」。
 
 ## 快速参考 —— 坐标
 
 - chunk 坐标 `cx = x >> 4`，`cz = z >> 4`；section `sy = y >> 4`
 - TileEntity 存在 chunk 的 `TileEntities[]` 列表里，是 NBT Compound
-- terrain 方块字节在 `Sections[sy].Blocks[]`（id 0-255）+ `.Data[]` nibble（meta）+ `.Add[]` nibble（高 metadata，1.12）
+- terrain 方块字节在 `Sections[sy].Blocks[]`（id 0-255）+ `.Data[]` nibble（meta）
 - `level.dat` 是全局的（不是 per-chunk）——请明确询问
 - 仅 1.12：数据为大端、zlib 压缩（type byte 2），不是 Anvil 格式 1
+
+## NBT 值表示（**别自己判别形态**）
+
+本工具读出的值是异构的：顶层 compound 字段是 `(tag_int, payload)`；list 里的 compound
+是**裸 dict**（tag 丢失）；list 元素用字符串 `"list"` / `"intarray"` 冒充 tag；
+byte array 是 `(7, ('bytearray', b'...'))` **双层嵌套**。
+
+统一用 `nbt.py` 的访问器，不要在业务代码里写判别：
+
+```python
+nb.unwrap(v)        # tagged-value → 朴素值
+nb.as_compound(v)   # → dict
+nb.as_list(v)       # → list
+nb.as_bytes(v)      # → bytes
+```
+
+> 这层判别历史上散落 4 处，其中 `block.read_block` 写错导致**恒返回空气**。现在是单点。
 
 ## 常见模式
 
@@ -48,16 +67,22 @@ set_tile(world, x, y, z, { "Command": "execute ...", "CustomName": "§4foo" })
 ### C. 某半径内所有命令方块
 
 ```
-list_tiles(world, box="x1,z1,x2,z2", keyword="function")
+list_tiles(world, box=(x1,z1,x2,z2), keyword="function")
 ```
+
+`box` 是 **4 元组**，不是 6 维。`keyword` 只匹配 `Command` 与 `id` 两个字段；
+要按其它字段过滤就 `keyword=None` 拿全量再自行筛。
 
 ### D. 精确定位 block
 
 ```
-list_tiles(world, keyword="npm run", box="0,0,0,100,0,100")
+read_block(world, x, y, z)  -> {id, meta, name}
 ```
 
-返回最多 N 条；通过返回的 offset cursor 分页
+`BLOCKS_1_12` 是 1.12 全表（254 条），由注册表生成。**不要手工增补**。
+易错项：`37/38` 是 `yellow_flower`/`red_flower`（顺序与直觉相反）；
+`28` 才是 `detector_rail`；`93` 才是中继器（`55` 是红石粉）；
+`137/210/211` 才是三种命令方块（210 与 211 极易搞反）。
 
 ### E. 动手前备份（always）
 
@@ -67,11 +92,10 @@ backup(world)   -> path
 
 备份落 `world/backups/<timestamp>/`。用户要回滚 → 恢复文件再 hash 验证。
 
-### F. Diff 一次变更
+### F. 批量扫描方块
 
-```
-diff("region/-4.-4.mca.before", "region/-4.-4.mca.after") -> {counts,cmd}
-```
+逐点 `read_block` 会每次重读整个 chunk（O(n²)）。**大批量扫描请按 chunk 批量读
+`Sections[]`**，不要逐点调用。
 
 ## 1.12 NBT 陷阱（每次先读）
 
@@ -84,6 +108,7 @@ diff("region/-4.-4.mca.before", "region/-4.-4.mca.after") -> {counts,cmd}
 7. `Sections` 未必每个 y slice 都有（空气 chunk）；decode 前先 check
 8. `.Data` 是 byte per block，**不是** nibble per block（unlike `.Light`）
 9. 数据存储在 **chunk 里**（region 包含 chunk 的 tile entities），不是 region 文件本身。1 个 .mca = 最多 1024 个 chunk，各自 zlib 压缩。
+10. 写入路径**不限定到目标 tile**：patch 作用于整个 chunk，同名字段可能报错或打错对象
 
 ## 坐标 quirk
 
