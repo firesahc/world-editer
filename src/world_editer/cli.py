@@ -117,3 +117,7 @@ def main():
 
     args = ap.parse_args()
     sys.exit(args.func(args))
+
+
+if __name__ == "__main__":
+    main()
