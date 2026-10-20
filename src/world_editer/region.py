@@ -128,9 +128,17 @@ def write_chunk(world, cx, cz, new_nbt_bytes):
     rf, li, sector, raw = chunk_location(world, cx, cz)
     raw = bytearray(raw)
     start = sector * 4096
-    ln = struct.unpack(">I", raw[start:start + 4])[0]
-    nsec = (ln + 4095) // 4096
-    payload = struct.pack(">I", len(new_nbt_bytes) + 1) + b"\x02" + zlib.compress(new_nbt_bytes)
+    # 该 chunk 实际占用的扇区数：位置表里的低字节是权威值
+    # （read_chunk 同样优先用它），不能只信头部长度字段。
+    loc = struct.unpack(">I", raw[li * 4:li * 4 + 4])[0]
+    nsec = loc & 0xFF
+    if not nsec:
+        nsec = (struct.unpack(">I", raw[start:start + 4])[0] + 4095) // 4096
+    compressed = zlib.compress(new_nbt_bytes)
+    # 头部长度字段 = 压缩后长度 + 1（+1 是 compressionType 字节）。
+    # 这里曾经写成未压缩长度，导致头部声称的扇区数远大于实际占用，
+    # 下一次 inplace 写入的零填充会抹掉后续 chunk 的数据。
+    payload = struct.pack(">I", len(compressed) + 1) + b"\x02" + compressed
     need = (len(payload) + 4095) // 4096
     if need <= nsec:
         mode = "inplace"
@@ -167,21 +175,9 @@ def _unwrap(v):
 
 
 def parse_tile_entities(data):
-    _, comp, _ = nb.read_root(data)
-    lvl = nb.as_compound(comp)
-    if lvl is None:
-        return []
-    lvl = nb.as_compound(lvl.get("Level")) or lvl
-    items = nb.as_list(lvl.get("TileEntities"))
-    if items is None:
-        return []
-    out = []
-    for it in items:
-        d = nb.as_compound(it)
-        if d is None:
-            continue
-        attrs = {}
-        for k, v in d.items():
-            attrs[k] = nb.unwrap(v)
-        out.append(attrs)
-    return out
+    """已废弃：改用 chunk.Chunk(data).tiles()。
+
+    保留仅为兼容旧调用；chunk 层是 tile 解析的唯一归属。
+    """
+    from . import chunk as ck
+    return ck.Chunk(data).tiles()

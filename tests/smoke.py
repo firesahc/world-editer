@@ -110,6 +110,66 @@ def main():
     assert nb.unwrap((1, 0)) == 0
     print("nbt accessors ok")
 
+    # 7. 写路径完整性：反复写入后 chunk 总数与头部一致性都不变
+    #    （write_chunk 曾把未压缩长度写进 chunk 头部，导致头部声称的扇区数
+    #     大于实际占用，后续写入的零填充会抹掉邻近 chunk 的数据）
+    import shutil
+    import struct
+    import tempfile
+    tmp = Path(tempfile.mkdtemp(prefix="we-smoke-"))
+    try:
+        (tmp / "region").mkdir()
+        for f in (WORLD / "region").glob("*.mca"):
+            shutil.copy2(f, tmp / "region" / f.name)
+
+        def chunk_total():
+            n = 0
+            for f in (tmp / "region").glob("*.mca"):
+                raw = f.read_bytes()
+                for li in range(1024):
+                    off = struct.unpack(">I", raw[li * 4:li * 4 + 4])[0]
+                    if off and (off >> 8):
+                        n += 1
+            return n
+
+        def header_mismatch():
+            bad = 0
+            for f in (tmp / "region").glob("*.mca"):
+                raw = f.read_bytes()
+                for li in range(1024):
+                    off = struct.unpack(">I", raw[li * 4:li * 4 + 4])[0]
+                    if not off or not (off >> 8):
+                        continue
+                    s = off >> 8
+                    if s * 4096 + 4 > len(raw):
+                        continue
+                    ln = struct.unpack(">I", raw[s * 4096:s * 4096 + 4])[0]
+                    if (ln + 4095) // 4096 != (off & 0xFF):
+                        bad += 1
+            return bad
+
+        total_before = chunk_total()
+        mism_before = header_mismatch()
+        cmd_tiles = [t for t in tile.tile_list(tmp, keyword=None) if "Command" in t]
+        probe = cmd_tiles[0]
+        for i in range(3):
+            block.set_block(tmp, probe["x"], probe["y"], probe["z"],
+                            "stone" if i % 2 == 0 else "cobblestone", 0, backup=False)
+            tile.tile_set(tmp, probe["x"], probe["y"], probe["z"],
+                          {"Command": "/say PROBE_%d" % i}, backup=False)
+        total_after = chunk_total()
+        mism_after = header_mismatch()
+        assert total_before == total_after, (
+            "chunk count changed: %d -> %d" % (total_before, total_after))
+        assert mism_before == mism_after == 0, (
+            "chunk header/sector mismatch: %d -> %d" % (mism_before, mism_after))
+        got = tile.tile_at(tmp, probe["x"], probe["y"], probe["z"])
+        assert got and got.get("Command") == "/say PROBE_2", "tile write did not stick"
+        print("write path integrity ok (chunks=%d, writes=3)" % total_after)
+
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
     print("SMOKE PASS")
 
 if __name__ == "__main__":

@@ -16,10 +16,11 @@ world-editer/
 ├── src/world_editer/
 │   ├── __init__.py
 │   ├── nbt.py            # NBT 读写 + 值表示的唯一访问入口
-│   ├── region.py         # .mca 打开、扇区读写、chunk 修补、备份、tile 解析
-│   ├── block.py          # 1.12 方块 id↔名字全表 + 单点方块读取
+│   ├── region.py         # .mca 打开、扇区读写、chunk 修补、备份、文件差异
+│   ├── chunk.py          # chunk 读写视图：方块/tile 定位、批量遍历、语义差异
+│   ├── block.py          # 1.12 方块语义：id↔名字全表、读写门面、批量填充
 │   ├── tile.py           # TileEntity 查询/合并式修改（Command、CustomName）
-│   └── cli.py            # argparse CLI：get/set/list/backup
+│   └── cli.py            # argparse CLI：get/set/list/fill/diff/backup
 ├── mcp/
 │   └── server.py         # fastmcp 包装 src/ 函数的 MCP 服务器
 ├── skill/
@@ -28,7 +29,7 @@ world-editer/
     └── smoke.py
 ```
 
-依赖方向是单向的：`cli / mcp → tile / block → region → nbt`，没有回指。
+依赖方向是单向的：`cli / mcp → tile / block → chunk → region → nbt`，没有回指。
 
 ## 1. nbt.py —— NBT 编解码 + 值表示的唯一入口
 
@@ -189,9 +190,9 @@ python tests/smoke.py
 
 以下能力**尚未实现**，需要时再按真实需求设计，不要预设：
 
-- `set block` / `fill`（区域方块写入）
-- `diff`（两次状态比对）
 - `tile_delete`（1.12 删 tile entity 非平凡）
+- `fill`（区域方块批量写入）
+- `diff`（两次状态比对）
 - 1.13+ 的 `BlockStates` / palette 格式
 - 写入路径**不限定到目标 tile**：`patch_field` / `patch_int` 作用于整个 chunk，
   同一 chunk 内存在同名字段时可能报错或打到别的对象。**改图前务必先备份并逐条验证。**
@@ -218,7 +219,7 @@ python tests/smoke.py
 - [x] skill SOP
 - [x] smoke test 覆盖全部 fixture
 - [x] backups 目录本地 gitignore
-- [ ] 写入路径限定到目标 tile
-- [ ] 批量方块读取 API（消除逐点读 chunk 的 O(n²)）
-- [ ] region 文件 raw 缓存
+- [x] 写入路径限定到目标 tile
+- [x] 批量方块读取 API（消除逐点读 chunk 的 O(n²)）
+- [x] region 文件 raw 缓存
 - [ ] set block / fill / diff（按真实需求再定）

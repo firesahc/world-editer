@@ -156,7 +156,7 @@ def _patch_int(raw, field, new_int):
     return nb.patch_int(raw, field, new_int)
 
 
-def tile_set(world, x, y, z, patch):
+def tile_set(world, x, y, z, patch, *, backup=True):
     """合并式修改**指定坐标**的那个 TileEntity。
 
     与旧实现的区别：补丁被定位到 x/y/z 对应的**那一个** tile，
@@ -191,9 +191,10 @@ def tile_set(world, x, y, z, patch):
         else:
             raise ValueError(f"unsupported patch type {type(val)} for {key!r}")
     # backup
-    bp = region.backup_region(world, rf)
+    bp = region.backup_region(world, rf) if backup else None
     region.write_chunk(world, cx, cz, new)
-    return {"coords": (x, y, z), "backup": str(bp), "patched": list(patch.keys())}
+    return {"coords": (x, y, z), "backup": str(bp) if bp else None,
+            "patched": list(patch.keys())}
 
 
 def tile_delete(world, x, y, z):
@@ -203,7 +204,7 @@ def tile_delete(world, x, y, z):
 def tile_list(world, box=None, keyword=None):
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-    from world_editer import region
+    from world_editer import region, chunk
     out = []
     # box: (x1,z1,x2,z2) in block coords; if None scan all loaded chunks
     if box is None:
@@ -226,10 +227,11 @@ def tile_list(world, box=None, keyword=None):
                     data = region.decompress_chunk_payload(raw, start, count, ln)
                 except Exception:
                     continue
-                for te in region.parse_tile_entities(data):
+                for te in chunk.Chunk(data).tiles():
                     if keyword and keyword not in (te.get("Command") or "") and keyword not in (te.get("id") or ""):
                         continue
                     out.append(te)
+
     else:
         x1, z1, x2, z2 = box
         cx1, cz1 = x1 >> 4, z1 >> 4
@@ -240,7 +242,7 @@ def tile_list(world, box=None, keyword=None):
                     data, *_ = region.read_chunk(world, cx, cz)
                 except Exception:
                     continue
-                for te in region.parse_tile_entities(data):
+                for te in chunk.Chunk(data).tiles():
                     if not (x1 <= te.get("x", 0) <= x2 and z1 <= te.get("z", 0) <= z2):
                         continue
                     if keyword and keyword not in (te.get("Command") or "") and keyword not in (te.get("id") or ""):

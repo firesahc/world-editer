@@ -48,6 +48,14 @@ def cmd_get_block(args):
     return 0
 
 
+def cmd_set_block(args):
+    w = _world(args)
+    res = block.set_block(w, args.x, args.y, args.z, args.block, args.meta,
+                          backup=not args.no_backup)
+    print(json.dumps(res, ensure_ascii=False, indent=2))
+    return 0
+
+
 def cmd_list_tiles(args):
     w = _world(args)
     box = None
@@ -103,6 +111,14 @@ def main():
     for a in ("world", "x", "y", "z", "patch"):
         st.add_argument(f"--{a}" if a != "world" else "-w", dest=a, required=True, type=str if a in ("world", "patch") else int)
     st.set_defaults(func=cmd_set_tile)
+
+    sb = s2.add_parser("block", help="set a terrain block")
+    for a in ("world", "x", "y", "z"):
+        sb.add_argument(f"--{a}" if a != "world" else "-w", dest=a, required=True, type=str if a == "world" else int)
+    sb.add_argument("block", help="block name (e.g. stone) or id")
+    sb.add_argument("--meta", type=int, default=0)
+    sb.add_argument("--no-backup", action="store_true")
+    sb.set_defaults(func=cmd_set_block)
 
     lst = sub.add_parser("list", help="list tile entities")
     lst.add_argument("-w", "--world", required=True, dest="world")

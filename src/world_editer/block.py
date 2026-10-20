@@ -1,4 +1,6 @@
 """Terrain block id/name helpers (1.12 Java)."""
+from pathlib import Path
+
 #
 # 1.12 的方块 id 与名字取自官方注册表快照：
 #   https://github.com/PrismarineJS/minecraft-data  ->  data/pc/1.12/blocks.json
@@ -287,3 +289,68 @@ def read_blocks(world, box):
     """
     from . import region, chunk as ck
     return ck.scan_blocks(region, world, box)
+
+
+# ------------------------------------------------------------------ 写
+
+_NAME_TO_ID = None
+
+
+def _name_to_id():
+    global _NAME_TO_ID
+    if _NAME_TO_ID is None:
+        _NAME_TO_ID = {}
+        for bid, name in BLOCKS_1_12.items():
+            _NAME_TO_ID[name] = bid
+    return _NAME_TO_ID
+
+
+def resolve_block_id(block):
+    """把方块名或 id 解析成 1.12 的 block id。
+
+    接受："stone" / "minecraft:stone" / 1 / "unknown_93"。
+    未知名字会报错并给出近似候选。
+    """
+    if isinstance(block, int):
+        if block not in BLOCKS_1_12:
+            raise KeyError("unknown block id %d" % block)
+        return block
+    name = str(block).strip().lower()
+    if name.startswith("minecraft:"):
+        name = name[len("minecraft:"):]
+    table = _name_to_id()
+    if name in table:
+        return table[name]
+    if name.isdigit():
+        bid = int(name)
+        if bid in BLOCKS_1_12:
+            return bid
+    import difflib
+    near = difflib.get_close_matches(name, list(table.keys()), n=5, cutoff=0.6)
+    raise KeyError("unknown block %r%s" % (
+        block, ("; did you mean: " + ", ".join(near)) if near else ""))
+
+
+def set_block(world, x, y, z, block, meta=0, *, backup=True):
+    """设置一个地形方块。
+
+    与 tile_set 不同，这里的定位是**按坐标**的（只动一个确定的数组下标），
+    不存在"补丁打到别的对象"的歧义问题。
+
+    注意：这是**离线**编辑 —— 改的是磁盘上的 .mca。服务器若正在加载该世界，
+    改动不会即时生效，且服务器下次保存会覆盖文件。
+    """
+    from . import region, chunk as ck
+    bid = resolve_block_id(block)
+    cx, cz = x >> 4, z >> 4
+    data, rf, li, sector, start, ln, raw = region.read_chunk(world, cx, cz)
+    ch = ck.Chunk(data, cx=cx, cz=cz)
+    changed = ch.set_block(x, y, z, bid, meta)
+    if not changed:
+        return {"coords": (x, y, z), "changed": False,
+                "block": block_name(bid), "meta": meta}
+    bp = region.backup_region(world, rf) if backup else None
+    region.write_chunk(world, cx, cz, ch.to_bytes())
+    return {"coords": (x, y, z), "changed": True,
+            "block": block_name(bid), "meta": meta,
+            "backup": str(bp) if bp else None}

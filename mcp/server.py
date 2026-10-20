@@ -8,7 +8,7 @@ HERE = Path(__file__).resolve().parent.parent
 if str(HERE / "src") not in sys.path:
     sys.path.insert(0, str(HERE / "src"))
 
-from world_editer import tile, block, region
+from world_editer import tile, block as block_mod, region
 
 try:
     from fastmcp import FastMCP

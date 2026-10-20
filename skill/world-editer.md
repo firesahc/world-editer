@@ -16,7 +16,8 @@ description: 离线 Minecraft 1.12 Anvil（.mca）地图数据编辑操作——
 
 ## 工具优先级
 
-优先用 MCP 服务器 `world-editer`（在 opencode.jsonc 里注册）——已具备 `get_tile`、`set_tile`、`get_block`、`list_tiles`、`backup`（共 5 个）。
+优先用 MCP 服务器 `world-editer`（在 opencode.jsonc 里注册）——已具备
+`get_tile`、`set_tile`、`get_block`、`list_tiles`、`backup`（共 5 个）。
 MCP 不可用时，用 execute 工具调用 CLI `world-editer ...`（也可 `python src/world_editer/cli.py ...`）。
 如果必须 scripting，直接复用 `src/world_editer/`，不要重新发明 NBT openers。
 
@@ -94,8 +95,8 @@ backup(world)   -> path
 
 ### F. 批量扫描方块
 
-逐点 `read_block` 会每次重读整个 chunk（O(n²)）。**大批量扫描请按 chunk 批量读
-`Sections[]`**，不要逐点调用。
+逐点 `read_block` 会每次重读整个 chunk（O(n²)）。**大批量扫描请用
+`block.read_blocks(world, box)`**（每 chunk 只解压一次）。
 
 ## 1.12 NBT 陷阱（每次先读）
 

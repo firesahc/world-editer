@@ -23,15 +23,24 @@ from . import nbt as nb
 
 
 class Chunk:
-    """一个已加载的 1.12 chunk 的只读视图。
+    """一个已加载的 1.12 chunk 的读写视图。
 
     构造一次、多次查询，避免逐点重读 chunk（逐点 read_block 是 O(n²)）。
+
+    写入路径依赖**保留 NBT 树**：`set_block` 改的是树里 `Sections[].Blocks/Data`
+    的字节数组，`to_bytes` 再把树序列化回去。已实测
+    `read_root → write_root` 字节无损，往返安全。
     """
 
-    __slots__ = ("_tiles", "_sections", "_blocks", "_data", "_sy")
+    __slots__ = ("_name", "_root", "_tiles", "_sections",
+                 "_blocks", "_data", "_sd", "_cx", "_cz")
 
-    def __init__(self, nbt_bytes: bytes):
-        _, comp, _ = nb.read_root(nbt_bytes)
+    def __init__(self, nbt_bytes: bytes, cx=None, cz=None):
+        name, comp, _ = nb.read_root(nbt_bytes)
+        self._name = name
+        self._root = comp
+        self._cx = cx
+        self._cz = cz
         lvl = nb.as_compound(comp)
         if lvl is None:
             lvl = {}
@@ -40,10 +49,10 @@ class Chunk:
 
         self._tiles = self._parse_tiles(lvl)
         self._sections = nb.as_list(lvl.get("Sections")) or []
-        # section Y -> (Blocks bytes, Data bytes)
+        # section Y -> (section compound, Blocks bytes, Data bytes)
         self._blocks = {}
         self._data = {}
-        self._sy = {}
+        self._sd = {}
         for sec in self._sections:
             sd = nb.as_compound(sec)
             if sd is None:
@@ -51,7 +60,7 @@ class Chunk:
             sy = nb.unwrap(sd.get("Y"))
             if not isinstance(sy, int):
                 continue
-            self._sy[sy] = sd
+            self._sd[sy] = sd
             b = nb.as_bytes(sd.get("Blocks"))
             d = nb.as_bytes(sd.get("Data"))
             if b:
@@ -116,6 +125,51 @@ class Chunk:
         bid, meta = self.block_at(x, y, z)
         return bid, meta, block_name(bid)
 
+    # ---------------------------------------------------------------- 写
+
+    def set_block(self, x, y, z, block_id, meta=0):
+        """设置一个地形方块，返回是否真的发生了变化。
+
+        定位是**按坐标**的（只动一个确定的数组下标），因此不存在
+        `tile_set` 那种"按字段名+旧值做字节匹配"的歧义问题 ——
+        永远不会误伤同 chunk 里的其它方块或 tile。
+        """
+        sy = y >> 4
+        sd = self._sd.get(sy)
+        if sd is None:
+            return False
+        b = self._blocks.get(sy)
+        if not b:
+            return False
+        si = self._index(x, y, z)
+        if si >= len(b):
+            return False
+        meta &= 0x0F
+        blocks = bytearray(b)
+        data = bytearray(self._data.get(sy, b""))
+        old_id = blocks[si]
+        idx = si >> 1
+        old_meta = 0
+        if idx < len(data):
+            old_meta = (data[idx] >> ((si & 1) << 2)) & 0x0F
+        if old_id == block_id and old_meta == meta:
+            return False
+        blocks[si] = block_id
+        if idx < len(data):
+            shift = (si & 1) << 2
+            data[idx] = (data[idx] & ~(0x0F << shift)) | (meta << shift)
+        # 写回树里，保持 _blocks/_data 与树同步
+        self._blocks[sy] = bytes(blocks)
+        self._data[sy] = bytes(data)
+        sd["Blocks"] = (nb.TAG_BYTE_ARRAY, ("bytearray", bytes(blocks)))
+        if data:
+            sd["Data"] = (nb.TAG_BYTE_ARRAY, ("bytearray", bytes(data)))
+        return True
+
+    def to_bytes(self):
+        """把（可能已被修改的）树序列化回 chunk NBT 字节。"""
+        return nb.write_root(self._name, self._root)
+
     def iter_blocks(self, cx, cz, x0=None, z0=None, x1=None, z1=None,
                     y0=None, y1=None):
         """遍历本 chunk 内的非空气方块，产出**世界坐标** (x, y, z, block_id, meta)。
@@ -158,7 +212,7 @@ class Chunk:
 def load_chunk(region, world, cx, cz):
     """从 world 读出一个 chunk 并包装成 Chunk 视图。"""
     data, *_ = region.read_chunk(world, cx, cz)
-    return Chunk(data)
+    return Chunk(data, cx=cx, cz=cz)
 
 
 def scan_blocks(region, world, box):
