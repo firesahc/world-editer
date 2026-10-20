@@ -170,6 +170,84 @@ class Chunk:
         """把（可能已被修改的）树序列化回 chunk NBT 字节。"""
         return nb.write_root(self._name, self._root)
 
+    # ---------------------------------------------------------------- 比对
+
+    def diff(self, other):
+        """与另一个 chunk 视图做**语义**比对。
+
+        噪声字段（每次保存都会自然变化）被忽略：
+          chunk 级 —— LastUpdate / HeightMap / LightPopulated / TileTicks
+                      / TerrainPopulated / InhabitedTime
+          tile  级 —— LastExecution / LastOutput
+
+        返回 {"blocks": [...], "tiles": [...]}，坐标为世界坐标。
+        """
+        chunks = [
+            "LastUpdate", "HeightMap", "LightPopulated", "TileTicks",
+            "TerrainPopulated", "InhabitedTime",
+        ]
+        tile_noise = ["LastExecution", "LastOutput"]
+
+        # --- 方块层：先比原始 bytes，相同则跳过逐位置扫描 ---
+        block_diffs = []
+        for sy in sorted(set(self._blocks) | set(other._blocks)):
+            b1 = self._blocks.get(sy, b"")
+            b2 = other._blocks.get(sy, b"")
+            d1 = self._data.get(sy, b"")
+            d2 = other._data.get(sy, b"")
+            if b1 == b2 and d1 == d2:
+                continue
+            base_x = (self._cx if self._cx is not None else 0) * 16
+            base_z = (self._cz if self._cz is not None else 0) * 16
+            for y in range(sy * 16, sy * 16 + 16):
+                for lz in range(16):
+                    for lx in range(16):
+                        si = self._index(lx, y, lz)
+                        if si >= len(b1) or si >= len(b2):
+                            continue
+                        i1 = b1[si]
+                        i2 = b2[si]
+                        m1 = self._meta_at(d1, si)
+                        m2 = self._meta_at(d2, si)
+                        if i1 == i2 and m1 == m2:
+                            continue
+                        block_diffs.append({
+                            "pos": [base_x + lx, y, base_z + lz],
+                            "before": [i1, m1],
+                            "after": [i2, m2],
+                        })
+
+        # --- tile 层：按坐标对齐比较字段 ---
+        t1 = {(t.get("x"), t.get("y"), t.get("z")): t for t in self._tiles}
+        t2 = {(t.get("x"), t.get("y"), t.get("z")): t for t in other._tiles}
+        tile_diffs = []
+        for coord in sorted(set(t1) | set(t2), key=lambda c: (str(c))):
+            a = t1.get(coord, {})
+            b = t2.get(coord, {})
+            if a.get("id") != b.get("id"):
+                tile_diffs.append({
+                    "pos": list(coord), "field": "id",
+                    "before": a.get("id"), "after": b.get("id"),
+                })
+            for k in sorted(set(a) | set(b)):
+                if k in tile_noise or k in ("x", "y", "z"):
+                    continue
+                if a.get(k) != b.get(k):
+                    tile_diffs.append({
+                        "pos": list(coord), "field": k,
+                        "before": a.get(k), "after": b.get(k),
+                    })
+        return {"blocks": block_diffs, "tiles": tile_diffs}
+
+    @staticmethod
+    def _meta_at(data, si):
+        if not data:
+            return 0
+        idx = si >> 1
+        if idx >= len(data):
+            return 0
+        return (data[idx] >> ((si & 1) << 2)) & 0x0F
+
     def iter_blocks(self, cx, cz, x0=None, z0=None, x1=None, z1=None,
                     y0=None, y1=None):
         """遍历本 chunk 内的非空气方块，产出**世界坐标** (x, y, z, block_id, meta)。

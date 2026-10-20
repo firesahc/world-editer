@@ -131,11 +131,44 @@ def tile_delete(world, x, y, z)                # 1.12 未实现，抛 NotImpleme
 world-editer get tile  -w <world> --x <x> --y <y> --z <z>
 world-editer get block -w <world> --x <x> --y <y> --z <z>
 world-editer set tile  -w <world> --x <x> --y <y> --z <z> --json patch.json
+world-editer set block -w <world> --x <x> --y <y> --z <z> <block> [--meta N] [--no-backup]
+world-editer fill      -w <world> --x1 --y1 --z1 --x2 --y2 --z2 <block>
+                       [--meta N] [--only-air] [--dry-run] [--max-blocks N] [--no-backup]
+world-editer diff      -w <world> --before <path> [--after <path>] [--json]
 world-editer list      -w <world> [--keyword KW] [--box x1,z1,x2,z2]
 world-editer backup    -w <world> [--label L]
 ```
 
 也可以直接 `python src/world_editer/cli.py ...` 运行。
+
+### 写方块（set block / fill）
+
+`set block` 改的是**地形方块**（区别于改方块实体的 `set tile`）：
+
+- 定位是**按坐标**的（只动一个确定的数组下标），不存在 `set tile` 那种"补丁打到别的对象"的歧义
+- 每次写入前自动备份受影响的 region 文件
+- `fill` 按 chunk 分组批处理（每个 chunk 只读一次、改一次、写一次）
+- `fill` 的护栏：体积上限（默认 100 万）、强制备份、`--dry-run` 只报告不改盘、未知方块名直接拒绝、`--only-air` 只填空位
+- **离线生效**：改的是磁盘上的 .mca。服务器若正在加载该世界，改动不会即时生效，且服务器下次保存会覆盖文件
+
+### 差异比对（diff）
+
+```text
+world-editer diff -w <world> --before backups/20261020_120000
+world-editer diff -w <world> --before old.mca --after new.mca
+```
+
+- `--before` 接受：备份目录 / 单个 .mca / 世界根目录；`--after` 缺省为当前世界
+- 报告分两层：**方块层**（哪些坐标的 id/meta 变了）与 **tile 层**（哪些字段变了）
+- 自动忽略噪声字段（每次保存都会自然变化的）：chunk 级 `LastUpdate` / `HeightMap` / `LightPopulated` / `TileTicks` / `TerrainPopulated` / `InhabitedTime`，tile 级 `LastExecution` / `LastOutput`
+
+推荐工作流：
+
+```text
+backup(world, label="before-fill")        →  world/backups/before-fill/
+fill(...)                                 →  改
+diff(world, before="backups/before-fill") →  看清改了什么
+```
 
 ## 6. mcp/server.py
 
@@ -151,7 +184,7 @@ world-editer backup    -w <world> [--label L]
 }
 ```
 
-**实际暴露的工具**（共 5 个）：
+**实际暴露的工具**（共 8 个）：
 
 | 工具 | 签名 |
 |---|---|
@@ -159,7 +192,13 @@ world-editer backup    -w <world> [--label L]
 | `set_tile` | `(x, y, z, patch_json) -> dict` |
 | `get_block` | `(x, y, z) -> dict` |
 | `list_tiles` | `(keyword, x1, z1, x2, z2) -> list` |
+| `set_block` | `(x, y, z, block, meta) -> dict` |
+| `fill` | `(x1,y1,z1,x2,y2,z2, block, meta, only_air, dry_run, max_blocks) -> dict` |
+| `diff` | `(before, after) -> dict` |
 | `backup` | `(label) -> str` |
+
+> `fill` 的 `dry_run` **默认为 True** —— MCP 侧只报告将改动什么，
+> 真正写入需显式传 `dry_run=False`（会自动备份）。
 
 ## 7. skill/world-editer.md
 
@@ -191,12 +230,14 @@ python tests/smoke.py
 以下能力**尚未实现**，需要时再按真实需求设计，不要预设：
 
 - `tile_delete`（1.12 删 tile entity 非平凡）
-- `fill`（区域方块批量写入）
-- `diff`（两次状态比对）
 - 1.13+ 的 `BlockStates` / palette 格式
 - 写入路径**不限定到目标 tile**：`patch_field` / `patch_int` 作用于整个 chunk，
   同一 chunk 内存在同名字段时可能报错或打到别的对象。**改图前务必先备份并逐条验证。**
-- `write_chunk` 不更新 chunk 的 `LastUpdate` 时间戳
+  （`set block` / `fill` 不受影响 —— 它们按坐标定位，天然无歧义）
+- `write_chunk` **不更新** chunk 的 `LastUpdate` 时间戳 → 大面积 `fill` 后
+  客户端加载时光照可能陈旧（仅观感，非数据损坏）
+- 写操作是**离线**的：服务器正在加载该世界时，改动不即时生效，
+  且服务器下次保存会覆盖文件
 
 ## 说明
 
@@ -222,4 +263,4 @@ python tests/smoke.py
 - [x] 写入路径限定到目标 tile
 - [x] 批量方块读取 API（消除逐点读 chunk 的 O(n²)）
 - [x] region 文件 raw 缓存
-- [ ] set block / fill / diff（按真实需求再定）
+- [x] set block / fill / diff

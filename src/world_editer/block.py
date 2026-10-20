@@ -354,3 +354,81 @@ def set_block(world, x, y, z, block, meta=0, *, backup=True):
     return {"coords": (x, y, z), "changed": True,
             "block": block_name(bid), "meta": meta,
             "backup": str(bp) if bp else None}
+
+
+def fill_area(world, box, block, meta=0, *, only_air=False, dry_run=False,
+              max_blocks=1_000_000, backup=True):
+    """用一个方块填充一个长方体区域。
+
+    box = (x1, y1, z1, x2, y2, z2)（可任意方向，自动归一）。
+
+    护栏（批量写世界是危险操作，这些是底线）：
+      * 体积上限 max_blocks —— 防止手滑填掉半个世界
+      * 强制备份 —— 1.12 没有撤销
+      * dry_run —— 只报告不改盘，与 diff 配合先看后改
+      * 未知方块名直接拒绝 —— 防止 "fill xxx air" 拼错后清空一片
+      * only_air —— 只填空位，不覆盖已有方块
+    """
+    from . import region, chunk as ck
+    bid = resolve_block_id(block)
+    x1, y1, z1, x2, y2, z2 = box
+    lo_x, hi_x = sorted((x1, x2))
+    lo_y, hi_y = sorted((y1, y2))
+    lo_z, hi_z = sorted((z1, z2))
+    volume = ((hi_x - lo_x + 1) * (hi_y - lo_y + 1) * (hi_z - lo_z + 1))
+    if volume > max_blocks:
+        raise ValueError(
+            "fill volume %d exceeds limit %d; raise max_blocks explicitly if intended"
+            % (volume, max_blocks))
+
+    # 按 chunk 分组：每个 chunk 只读一次、改一次、写一次
+    groups = {}
+    for cx in range(lo_x >> 4, (hi_x >> 4) + 1):
+        for cz in range(lo_z >> 4, (hi_z >> 4) + 1):
+            groups.setdefault((cx, cz), [])
+
+    affected = set()
+    changed = 0
+    touched = 0
+    for (cx, cz) in sorted(groups):
+        try:
+            data, rf, li, sector, start, ln, raw = region.read_chunk(world, cx, cz)
+        except Exception:
+            continue
+        ch = ck.Chunk(data, cx=cx, cz=cz)
+        dirty = False
+        bx0 = max(lo_x, cx * 16)
+        bx1 = min(hi_x, cx * 16 + 15)
+        bz0 = max(lo_z, cz * 16)
+        bz1 = min(hi_z, cz * 16 + 15)
+        for y in range(lo_y, hi_y + 1):
+            for z in range(bz0, bz1 + 1):
+                for x in range(bx0, bx1 + 1):
+                    if only_air:
+                        cur, _ = ch.block_at(x, y, z)
+                        if cur != 0:
+                            continue
+                    if ch.set_block(x, y, z, bid, meta):
+                        changed += 1
+                        dirty = True
+        if not dirty:
+            continue
+        touched += 1
+        affected.add(str(rf))
+        if not dry_run:
+            region.write_chunk(world, cx, cz, ch.to_bytes())
+
+    backups = []
+    if backup and not dry_run and affected:
+        for p in affected:
+            backups.append(str(region.backup_region(world, Path(p))))
+
+    return {
+        "box": [lo_x, lo_y, lo_z, hi_x, hi_y, hi_z],
+        "block": block_name(bid), "meta": meta,
+        "volume": volume, "changed_blocks": changed,
+        "chunks_touched": touched, "regions": len(affected),
+        "dry_run": bool(dry_run),
+        "only_air": bool(only_air),
+        "backups": backups,
+    }

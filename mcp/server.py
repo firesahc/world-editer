@@ -57,6 +57,33 @@ if mcp is not None:
         return tile.tile_list(_w(), box=box, keyword=keyword or None)
 
     @mcp.tool()
+    async def set_block(x: int, y: int, z: int, block: str, meta: int = 0) -> dict:
+        """Set one terrain block (offline edit; needs world reload to take effect)."""
+        return block_mod.set_block(_w(), x, y, z, block, meta)
+
+    @mcp.tool()
+    async def fill(x1: int, y1: int, z1: int, x2: int, y2: int, z2: int,
+                   block: str, meta: int = 0, only_air: bool = False,
+                   dry_run: bool = True, max_blocks: int = 1_000_000) -> dict:
+        """Fill a box with a block.
+
+        dry_run defaults to True: the MCP tool only reports what would change.
+        Pass dry_run=False to actually write (a backup is taken automatically).
+        """
+        return block_mod.fill_area(_w(), (x1, y1, z1, x2, y2, z2), block, meta,
+                                   only_air=only_air, dry_run=dry_run,
+                                   max_blocks=max_blocks)
+
+    @mcp.tool()
+    async def diff(before: str, after: str = "") -> dict:
+        """Compare two world states.
+
+        `before` may be a backup dir, a .mca file, or a world root.
+        `after` defaults to the configured world.
+        """
+        return region.diff_worlds(before, after or _w())
+
+    @mcp.tool()
     async def backup(label: str = "") -> str:
         """Backup all region .mca files into world/backups/<timestamp>."""
         import shutil

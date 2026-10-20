@@ -181,3 +181,104 @@ def parse_tile_entities(data):
     """
     from . import chunk as ck
     return ck.Chunk(data).tiles()
+
+
+# ------------------------------------------------------------------ 比对
+
+def mca_files(path):
+    """把一个路径归一成 {文件名: .mca 路径}。
+
+    接受：单个 .mca 文件 / 含 .mca 的目录 / 世界根目录（含 region/）。
+    """
+    p = Path(path)
+    if p.is_file():
+        return {p.name: p}
+    if (p / "region").is_dir():
+        p = p / "region"
+    if not p.is_dir():
+        raise FileNotFoundError("not a .mca file or directory: %s" % path)
+    return {f.name: f for f in sorted(p.glob("*.mca"))}
+
+
+def _chunks_in_file(rf):
+    """产出 (cx, cz, chunk_nbt_bytes)。"""
+    raw = rf.read_bytes()
+    try:
+        _, rx, rz = rf.stem.split(".")
+        rx, rz = int(rx), int(rz)
+    except ValueError:
+        return []
+    out = []
+    for li in range(1024):
+        off = struct.unpack(">I", raw[li * 4:li * 4 + 4])[0]
+        if off == 0:
+            continue
+        sector = off >> 8
+        if sector == 0:
+            continue
+        count = off & 0xFF
+        start = sector * 4096
+        if start + 5 > len(raw) or raw[start + 4] != 2:
+            continue
+        ln = struct.unpack(">I", raw[start:start + 4])[0]
+        try:
+            data = decompress_chunk_payload(raw, start, count, ln)
+        except Exception:
+            continue
+        out.append((rx * 32 + (li % 32), rz * 32 + (li // 32), data))
+    return out
+
+
+def diff_files(a_path, b_path):
+    """比较两个 .mca 文件的 chunk 级差异（before → after）。"""
+    from . import chunk as ck
+    # 键必须是 (cx, cz)：一个 region 文件里同一个 cx 对应 32 个不同 cz，
+    # 只按 cx 建表会把上千个 chunk 压成 32 个。
+    ca = {(cx, cz): d for cx, cz, d in _chunks_in_file(Path(a_path))}
+    cb = {(cx, cz): d for cx, cz, d in _chunks_in_file(Path(b_path))}
+    chunks = []
+    for key in sorted(set(ca) | set(cb)):
+        cx, cz = key
+        a = ca.get(key)
+        b = cb.get(key)
+        if a is None or b is None:
+            chunks.append({
+                "cx": cx, "cz": cz,
+                "status": "added" if b is not None else "removed",
+                "blocks": [], "tiles": [],
+            })
+            continue
+        d = ck.Chunk(a, cx=cx, cz=cz).diff(ck.Chunk(b, cx=cx, cz=cz))
+        if d["blocks"] or d["tiles"]:
+            chunks.append({"cx": cx, "cz": cz, "status": "changed", **d})
+    return chunks
+
+
+def diff_worlds(before_path, after_path):
+    """比较两个世界/目录/文件（before → after），返回带汇总的差异报告。
+
+    噪声字段（LastUpdate / HeightMap / LastOutput 等）在 chunk 层已过滤。
+    """
+    fa = mca_files(before_path)
+    fb = mca_files(after_path)
+    files = []
+    summary = {"files_compared": 0, "files_only_before": 0, "files_only_after": 0,
+               "chunks_changed": 0, "blocks_changed": 0, "tiles_changed": 0}
+    for name in sorted(set(fa) | set(fb)):
+        if name not in fa:
+            summary["files_only_after"] += 1
+            files.append({"name": name, "status": "added", "chunks": []})
+            continue
+        if name not in fb:
+            summary["files_only_before"] += 1
+            files.append({"name": name, "status": "removed", "chunks": []})
+            continue
+        summary["files_compared"] += 1
+        chunks = diff_files(fa[name], fb[name])
+        if chunks:
+            files.append({"name": name, "status": "changed", "chunks": chunks})
+            summary["chunks_changed"] += len(chunks)
+            for c in chunks:
+                summary["blocks_changed"] += len(c.get("blocks", []))
+                summary["tiles_changed"] += len(c.get("tiles", []))
+    return {"files": files, "summary": summary}

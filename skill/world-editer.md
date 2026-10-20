@@ -17,7 +17,7 @@ description: 离线 Minecraft 1.12 Anvil（.mca）地图数据编辑操作——
 ## 工具优先级
 
 优先用 MCP 服务器 `world-editer`（在 opencode.jsonc 里注册）——已具备
-`get_tile`、`set_tile`、`get_block`、`list_tiles`、`backup`（共 5 个）。
+`get_tile`、`set_tile`、`get_block`、`list_tiles`、`set_block`、`fill`、`diff`、`backup`（共 8 个）。
 MCP 不可用时，用 execute 工具调用 CLI `world-editer ...`（也可 `python src/world_editer/cli.py ...`）。
 如果必须 scripting，直接复用 `src/world_editer/`，不要重新发明 NBT openers。
 
@@ -97,6 +97,31 @@ backup(world)   -> path
 
 逐点 `read_block` 会每次重读整个 chunk（O(n²)）。**大批量扫描请用
 `block.read_blocks(world, box)`**（每 chunk 只解压一次）。
+
+### G. 写地形方块
+
+```
+set_block(world, x, y, z, "stone", meta)      # 改一个方块
+fill_area(world, (x1,y1,z1,x2,y2,z2), "dirt") # 填一片
+```
+
+- 与 `set tile` 不同，这里的定位是**按坐标**的（只动一个确定的数组下标），
+  天然不存在"补丁打到别的对象"的歧义
+- 每次写入自动备份受影响的 region 文件
+- `fill` 的护栏：体积上限、强制备份、`dry_run` 只报告不改盘、未知方块名拒绝、`only_air` 只填空位
+- **离线生效**：改的是磁盘上的 .mca，服务器下次保存会覆盖文件
+
+### H. 差异比对
+
+```
+region.diff_worlds(before_path, after_path)
+```
+
+`before` 可为备份目录 / 单个 .mca / 世界根目录；`after` 缺省为当前世界。
+报告分**方块层**与**tile 层**两层，自动忽略噪声字段
+（`LastUpdate` / `HeightMap` / `LastOutput` 等）。
+
+**推荐工作流**：`backup` → 改 → `diff`，把盲改变变成可核对的改变。
 
 ## 1.12 NBT 陷阱（每次先读）
 

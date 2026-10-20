@@ -56,6 +56,44 @@ def cmd_set_block(args):
     return 0
 
 
+def cmd_fill(args):
+    w = _world(args)
+    box = (args.x1, args.y1, args.z1, args.x2, args.y2, args.z2)
+    res = block.fill_area(w, box, args.block, args.meta,
+                          only_air=args.only_air, dry_run=args.dry_run,
+                          max_blocks=args.max_blocks, backup=not args.no_backup)
+    print(json.dumps(res, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_diff(args):
+    w = _world(args)
+    after = args.after or w
+    res = region.diff_worlds(args.before, after)
+    if args.json:
+        print(json.dumps(res, ensure_ascii=False, indent=2))
+        return 0
+    s = res["summary"]
+    print("对比: %s  ->  %s" % (args.before, after))
+    print("文件: 比较 %d, 仅前有 %d, 仅后有 %d" % (
+        s["files_compared"], s["files_only_before"], s["files_only_after"]))
+    print("变更: chunk %d, 方块 %d, tile字段 %d" % (
+        s["chunks_changed"], s["blocks_changed"], s["tiles_changed"]))
+    for f in res["files"]:
+        if f["status"] != "changed":
+            print("  [%s] %s" % (f["status"], f["name"]))
+            continue
+        for c in f["chunks"]:
+            print("  %s chunk(%s,%s) %s" % (
+                f["name"], c["cx"], c["cz"], c["status"]))
+            for b in c["blocks"][:50]:
+                print("     block %s  %s -> %s" % (b["pos"], b["before"], b["after"]))
+            for t in c["tiles"][:50]:
+                print("     tile  %s.%s  %r -> %r" % (
+                    t["pos"], t["field"], t["before"], t["after"]))
+    return 0
+
+
 def cmd_list_tiles(args):
     w = _world(args)
     box = None
@@ -125,6 +163,29 @@ def main():
     lst.add_argument("--box", default=None)
     lst.add_argument("--keyword", default=None)
     lst.set_defaults(func=cmd_list_tiles)
+
+    fl = sub.add_parser("fill", help="fill a box with a block")
+    fl.add_argument("-w", "--world", required=True, dest="world")
+    for a in ("x1", "y1", "z1", "x2", "y2", "z2"):
+        fl.add_argument(f"--{a}", dest=a, required=True, type=int)
+    fl.add_argument("block", help="block name (e.g. stone) or id")
+    fl.add_argument("--meta", type=int, default=0)
+    fl.add_argument("--only-air", action="store_true",
+                    help="only fill air, keep existing blocks")
+    fl.add_argument("--dry-run", action="store_true",
+                    help="report what would change without writing")
+    fl.add_argument("--max-blocks", type=int, default=1_000_000)
+    fl.add_argument("--no-backup", action="store_true")
+    fl.set_defaults(func=cmd_fill)
+
+    df = sub.add_parser("diff", help="compare two world states")
+    df.add_argument("-w", "--world", required=True, dest="world")
+    df.add_argument("--before", required=True,
+                    help="backup dir / .mca file / world root (the 'before' side)")
+    df.add_argument("--after", default=None,
+                    help="the 'after' side; defaults to --world")
+    df.add_argument("--json", action="store_true")
+    df.set_defaults(func=cmd_diff)
 
     bk = sub.add_parser("backup", help="backup whole region")
     bk.add_argument("-w", "--world", required=True, dest="world")

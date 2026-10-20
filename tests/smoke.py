@@ -167,6 +167,30 @@ def main():
         assert got and got.get("Command") == "/say PROBE_2", "tile write did not stick"
         print("write path integrity ok (chunks=%d, writes=3)" % total_after)
 
+        # 8. diff 必须精确检出改动，且不报噪声字段
+        #    备份整个 region 目录：探针方块可能落在任意 region 文件里
+        before_dir = tmp / "backups" / "probe"
+        before_dir.mkdir(parents=True)
+        for f in (tmp / "region").glob("*.mca"):
+            shutil.copy2(f, before_dir / f.name)
+        block.set_block(tmp, probe["x"], probe["y"], probe["z"], "dirt", 0, backup=False)
+        tile.tile_set(tmp, probe["x"], probe["y"], probe["z"],
+                      {"Command": "/say DIFF_PROBE"}, backup=False)
+        d = region.diff_worlds(before_dir, tmp)
+        s = d["summary"]
+        assert s["blocks_changed"] == 1, "diff blocks_changed=%s" % s["blocks_changed"]
+        assert s["tiles_changed"] == 1, "diff tiles_changed=%s" % s["tiles_changed"]
+        blk = None
+        tl = None
+        for f in d["files"]:
+            for c in f["chunks"]:
+                for b in c["blocks"]:
+                    blk = b
+                for t in c["tiles"]:
+                    tl = t
+        assert blk and blk["pos"] == [probe["x"], probe["y"], probe["z"]], blk
+        assert tl and tl["field"] == "Command", tl
+        print("diff ok (blocks=%d tiles=%d)" % (s["blocks_changed"], s["tiles_changed"]))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
