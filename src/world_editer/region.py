@@ -15,13 +15,46 @@ if str(ROOT / "src") not in sys.path:
 import world_editer.nbt as nb
 
 
+# region 文件内容缓存：{绝对路径: (mtime, bytes)}
+# 批量扫描时同一 region 会被读上百次，不缓存就是 O(n²) 的 IO 放大。
+# 写入 region 后必须失效对应条目（见 _invalidate_region）。
+_REGION_CACHE = {}
+
+
+def _read_region_bytes(rf):
+    """读 region 文件并缓存内容；文件被修改后自动失效。"""
+    key = str(rf)
+    try:
+        st = rf.stat()
+    except OSError:
+        return b""
+    sig = (st.st_mtime_ns, st.st_size)
+    hit = _REGION_CACHE.get(key)
+    if hit is not None and hit[0] == sig:
+        return hit[1]
+    raw = rf.read_bytes()
+    _REGION_CACHE[key] = (sig, raw)
+    return raw
+
+
+def invalidate_region_cache(world=None):
+    """清空缓存。写完 region 后应调用；world=None 清全部。"""
+    if world is None:
+        _REGION_CACHE.clear()
+        return
+    pref = str(Path(world).resolve())
+    for k in list(_REGION_CACHE):
+        if k.startswith(pref):
+            del _REGION_CACHE[k]
+
+
 def chunk_location(world, cx, cz):
     rx, rz = cx >> 5, cz >> 5
     rf = Path(world) / "region" / f"r.{rx}.{rz}.mca"
     if not rf.exists():
         raise FileNotFoundError(f"region 文件不存在: {rf}")
     li = (cz - rz * 32) * 32 + (cx - rx * 32)
-    raw = rf.read_bytes()
+    raw = _read_region_bytes(rf)
     off = struct.unpack(">I", raw[li * 4:li * 4 + 4])[0]
     if off == 0:
         raise KeyError(f"chunk 尚未生成: cx={cx} cz={cz}")
@@ -115,6 +148,7 @@ def write_chunk(world, cx, cz, new_nbt_bytes):
             raw[endstart + k] = 0
         raw[li * 4:li * 4 + 4] = struct.pack(">I", (nend << 8) | need)
     rf.write_bytes(bytes(raw))
+    invalidate_region_cache(world)
     return {"path": str(rf), "mode": mode, "old_sectors": nsec, "new_sectors": need}
 
 
@@ -128,43 +162,26 @@ def backup_region(world, region_path):
 
 
 def _unwrap(v):
-    if isinstance(v, tuple):
-        if len(v) == 2:
-            return v[1]
-        if len(v) == 3 and v[0] == 9:  # list -> items
-            return [_unwrap(x) for x in v[2]]
-    return v
+    """保留的薄封装：形态判别的唯一实现在 nbt.unwrap()。"""
+    return nb.unwrap(v)
 
 
 def parse_tile_entities(data):
     _, comp, _ = nb.read_root(data)
-    lvl = comp
-    if isinstance(lvl, dict) and "Level" in lvl:
-        v = lvl["Level"]
-        lvl = v[1] if isinstance(v, tuple) and v[0] == 10 else v
-    if not isinstance(lvl, dict):
+    lvl = nb.as_compound(comp)
+    if lvl is None:
         return []
-    tes = lvl.get("TileEntities")
-    if not (isinstance(tes, tuple) and tes[0] == 9):
+    lvl = nb.as_compound(lvl.get("Level")) or lvl
+    items = nb.as_list(lvl.get("TileEntities"))
+    if items is None:
         return []
-    # tes is (9, ("list", sub, [items]))
-    inner = tes[1]
-    if isinstance(inner, tuple) and len(inner) == 3:
-        items = inner[2]
-    elif isinstance(tes, tuple) and len(tes) == 3:
-        items = tes[2]
-    else:
-        items = []
     out = []
     for it in items:
-        if isinstance(it, dict):
-            d = it
-        elif isinstance(it, tuple) and it[0] == 10 and isinstance(it[1], dict):
-            d = it[1]
-        else:
+        d = nb.as_compound(it)
+        if d is None:
             continue
         attrs = {}
         for k, v in d.items():
-            attrs[k] = _unwrap(v)
+            attrs[k] = nb.unwrap(v)
         out.append(attrs)
     return out

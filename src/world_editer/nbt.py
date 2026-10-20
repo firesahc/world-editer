@@ -223,3 +223,74 @@ def find_field_path(comp, target, path=""):
                 if sub:
                     return sub
     return None
+
+
+# ---------------------------------------------------------------------------
+# 值表示的唯一访问入口
+#
+# 本模块读出的值是**异构**的：
+#   * 顶层 compound 字段是 (tag_int, payload)
+#   * list 里的 compound 元素是**裸 dict**（tag 丢失）
+#   * list 里的 list 元素是 ("list", sub_tag, [...])，用**字符串**冒充 tag
+#   * list 里的数组元素是 ("intarray"/"longarray", [...])，同样用字符串
+#   * byte array 是 (7, ('bytearray', b'...')) —— **双层**嵌套
+#
+# 各消费方（region / block / tile）如果各自判别形态，判别逻辑会散落多处并
+# 互相分叉。下面的函数是全项目**唯一**的形态判别入口。
+# ---------------------------------------------------------------------------
+
+def unwrap(v):
+    """把 tagged-value 还原成朴素 Python 值。
+
+    对 compound 返回 dict 本身（不递归其内容），调用方按字段逐个 unwrap。
+    """
+    if isinstance(v, tuple):
+        if len(v) == 2:
+            p = v[1]
+            if isinstance(p, tuple):
+                return unwrap(p)
+            if isinstance(p, (bytes, bytearray)):
+                return bytes(p)
+            return p
+        if len(v) == 3 and isinstance(v[2], list):
+            return [unwrap(x) for x in v[2]]
+    return v
+
+
+def as_compound(v):
+    """取 compound 字典。
+
+    兼容两种形态：裸 dict，以及 (TAG_COMPOUND, dict)。
+    """
+    if isinstance(v, dict):
+        return v
+    if isinstance(v, tuple) and len(v) == 2 and isinstance(v[1], dict):
+        return v[1]
+    return None
+
+
+def as_list(v):
+    """取 list。兼容 ("list", sub, items)、(TAG_LIST, ...) 与裸 list。"""
+    if isinstance(v, list):
+        return v
+    if isinstance(v, tuple):
+        if len(v) == 3 and isinstance(v[2], list):
+            return v[2]
+        if len(v) == 2 and isinstance(v[1], (list, tuple)):
+            inner = v[1]
+            if isinstance(inner, tuple) and len(inner) == 3 and isinstance(inner[2], list):
+                return inner[2]
+    return None
+
+
+def as_bytes(v):
+    """取 byte array 的原始字节。兼容 (7, ('bytearray', b'..')) 双层嵌套。"""
+    if isinstance(v, (bytes, bytearray)):
+        return bytes(v)
+    if isinstance(v, tuple) and len(v) == 2:
+        p = v[1]
+        if isinstance(p, (bytes, bytearray)):
+            return bytes(p)
+        if isinstance(p, tuple) and len(p) == 2 and isinstance(p[1], (bytes, bytearray)):
+            return bytes(p[1])
+    return b""

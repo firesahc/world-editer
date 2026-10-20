@@ -78,11 +78,37 @@ def main():
     print("list function tiles:", len(lst))
     assert isinstance(lst, list)
 
-    # 4. block read sanity on first chunk's tile x/y/z if present
-    if sample_te and all(k in sample_te for k in ("x", "y", "z")):
-        b = block.read_block(WORLD, sample_te["x"], sample_te["y"], sample_te["z"])
-        print("block at tile:", b)
-        assert isinstance(b, dict) and "id" in b
+    # 4. block read 必须在已知命令方块坐标上返回真实 id（不是空气）
+    #    曾经的弱断言 isinstance(dict) 掩盖了 read_block 恒返回空气的 bug
+    cmd_tiles = [t for t in tile.tile_list(WORLD, keyword=None)
+                 if "Command" in t]
+    assert cmd_tiles, "no command block tiles found"
+    checked = 0
+    for t in cmd_tiles[:20]:
+        b = block.read_block(WORLD, t["x"], t["y"], t["z"])
+        assert b["id"] in (137, 210, 211), (
+            "read_block(%s,%s,%s) -> %s, expected a command block id"
+            % (t["x"], t["y"], t["z"], b))
+        checked += 1
+    print("read_block hits command blocks:", checked)
+
+    # 5. BLOCKS_1_12 必须覆盖 1.12 关键方块
+    for bid, name in ((55, "redstone_wire"), (93, "unpowered_repeater"),
+                      (137, "command_block"), (149, "unpowered_comparator"),
+                      (152, "redstone_block"), (210, "repeating_command_block"),
+                      (211, "chain_command_block")):
+        assert block.block_name(bid) == name, (
+            "BLOCKS_1_12[%d] should be %s, got %s"
+            % (bid, name, block.block_name(bid)))
+    print("BLOCKS_1_12 key entries ok")
+
+    # 6. nbt 访问器：双层 byte array、裸 dict section、异构 list
+    import world_editer.nbt as nb
+    assert nb.as_bytes((7, ("bytearray", b"\x01\x02"))) == b"\x01\x02"
+    assert nb.as_compound({"a": 1}) == {"a": 1}
+    assert nb.as_list(("list", 10, [1, 2])) == [1, 2]
+    assert nb.unwrap((1, 0)) == 0
+    print("nbt accessors ok")
 
     print("SMOKE PASS")
 
